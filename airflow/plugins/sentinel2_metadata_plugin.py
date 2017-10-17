@@ -111,6 +111,7 @@ class Sentinel2MetadataOperator(BaseOperator):
         GS_WCS_SCALE_I,
         GS_WCS_SCALE_J,
         GS_WCS_FORMAT,
+        ORIGINAL_PACKAGE_LOCATION,
         coverage_id,
         get_inputs_from=None,
         *args, **kwargs):
@@ -128,17 +129,18 @@ class Sentinel2MetadataOperator(BaseOperator):
             self.GS_WCS_FORMAT = GS_WCS_FORMAT            
             self.coverage_id = coverage_id
             self.get_inputs_from = get_inputs_from
+            self.ORIGINAL_PACKAGE_LOCATION = ORIGINAL_PACKAGE_LOCATION
             super(Sentinel2MetadataOperator, self).__init__(*args, **kwargs)
 
     def execute(self, context):
         if self.get_inputs_from != None:
-            log.info("Getting inputs from: " +self.get_inputs_from)
-            self.downloaded_products = context['task_instance'].xcom_pull(task_ids=self.get_inputs_from, key=XCOM_RETURN_KEY)
+            log.info("Getting inputs from: {}".format(self.get_inputs_from))
+            self.downloaded_products, self.archived_products = context['task_instance'].xcom_pull(task_ids=self.get_inputs_from, key=XCOM_RETURN_KEY)
         else:
             log.info("Getting inputs from: dhus_download_task" )
             self.downloaded_products = context['task_instance'].xcom_pull('dhus_download_task', key='downloaded_products')
 
-        services= [{"wms":("GetCapabilities","GetMap")},{"wfs":("GetCapabilities","GetFeature")},{"wcs":("GetCapabilities","GetCoverage")}]
+        services= [{"wms":("GetCapabilities","GetMap","eoIdentifier")},{"wfs":("GetCapabilities","GetFeature","eoParentIdentifier")},{"wcs":("GetCapabilities","GetCoverage","eoParentIdentifier")}]
         for product in self.downloaded_products.keys():
             log.info("Processing: {}".format(product))
             with s2reader.open(product) as s2_product:
@@ -158,7 +160,7 @@ class Sentinel2MetadataOperator(BaseOperator):
                     "eop:identifier": s2_product.manifest_safe_path.rsplit('.SAFE', 1)[0],
                     "timeStart": s2_product.product_start_time,
                     "timeEnd": s2_product.product_stop_time,
-                    "originalPackageLocation": None, 
+                    "originalPackageLocation": os.path.join(self.ORIGINAL_PACKAGE_LOCATION , self.archived_products.pop(0).rsplit("/")[-1]), 
                     "thumbnailURL": None,
                     "quicklookURL": None,
                     "eop:parentIdentifier": "SENTINEL2",
@@ -223,10 +225,11 @@ class Sentinel2MetadataOperator(BaseOperator):
                                   "method": "GET",
                                   "code": "GetCapabilities",
                                   "type": "application/xml",
-                                  "href": "${BASE_URL}"+"/{}/{}/ows?service={}&request=GetCapabilities&CQL_FILTER=eoParentIdentifier='{}'".format(
+                                  "href": "${BASE_URL}"+"/{}/{}/ows?service={}&request=GetCapabilities&CQL_FILTER={}='{}'".format(
                                         self.GS_WORKSPACE,
                                         self.GS_LAYER,
                                         service_name.upper(),
+                                        service_calls[2],
                                         s2_product.manifest_safe_path.rsplit('.SAFE', 1)[0])})
             
             #Here we generate the dictionaries of GetMap, GetFeature and GetCoverage operations from util dir

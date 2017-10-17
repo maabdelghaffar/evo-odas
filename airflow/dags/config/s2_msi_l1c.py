@@ -20,6 +20,13 @@ upload_dir = os.path.join(collection_dir,"upload")
 repository_dir = os.path.join(collection_dir,"repository")
 
 #
+# Metadata
+#
+hostname = "http://geoserver.cloudsdi.geo-solutions.it"
+path = "data/sentinel/sentinel2/S2_MSI_L1C"
+originalPackageLocation = os.path.join(hostname, path)
+
+#
 # DHUS specific
 #
 dhus_filter_max = 5
