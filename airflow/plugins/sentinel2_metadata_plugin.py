@@ -138,7 +138,7 @@ class Sentinel2MetadataOperator(BaseOperator):
             log.info("Getting inputs from: dhus_download_task" )
             self.downloaded_products = context['task_instance'].xcom_pull('dhus_download_task', key='downloaded_products')
 
-        services= [{"wms":("GetCapabilities","GetMap","eoIdentifier")},{"wfs":("GetCapabilities","GetFeature","eoParentIdentifier")},{"wcs":("GetCapabilities","GetCoverage","eoParentIdentifier")}]
+        services= [{"wms":("GetCapabilities","GetMap","eoIdentifier")},{"wfs":("GetCapabilities","GetFeature","eoIdentifier")},{"wcs":("GetCapabilities","GetCoverage","eoIdentifier")}]
         for product in self.downloaded_products.keys():
             log.info("Processing: {}".format(product))
             with s2reader.open(product) as s2_product:
