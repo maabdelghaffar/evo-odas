@@ -111,7 +111,7 @@ class Sentinel2MetadataOperator(BaseOperator):
         GS_WCS_SCALE_I,
         GS_WCS_SCALE_J,
         GS_WCS_FORMAT,
-        ORIGINAL_PACKAGE_LOCATION,
+        ORIGINAL_PACKAGE_DOWNLOAD_BASE_URL,
         coverage_id,
         get_inputs_from=None,
         *args, **kwargs):
@@ -129,7 +129,7 @@ class Sentinel2MetadataOperator(BaseOperator):
             self.GS_WCS_FORMAT = GS_WCS_FORMAT            
             self.coverage_id = coverage_id
             self.get_inputs_from = get_inputs_from
-            self.ORIGINAL_PACKAGE_LOCATION = ORIGINAL_PACKAGE_LOCATION
+            self.ORIGINAL_PACKAGE_DOWNLOAD_BASE_URL = ORIGINAL_PACKAGE_DOWNLOAD_BASE_URL
             super(Sentinel2MetadataOperator, self).__init__(*args, **kwargs)
 
     def execute(self, context):
@@ -160,7 +160,7 @@ class Sentinel2MetadataOperator(BaseOperator):
                     "eop:identifier": s2_product.manifest_safe_path.rsplit('.SAFE', 1)[0],
                     "timeStart": s2_product.product_start_time,
                     "timeEnd": s2_product.product_stop_time,
-                    "originalPackageLocation": os.path.join(self.ORIGINAL_PACKAGE_LOCATION , self.archived_products.pop(0).rsplit("/")[-1]), 
+                    "originalPackageLocation": os.path.join(self.ORIGINAL_PACKAGE_DOWNLOAD_BASE_URL , self.archived_products.pop(0).rsplit("/")[-1]), 
                     "thumbnailURL": None,
                     "quicklookURL": None,
                     "eop:parentIdentifier": "SENTINEL2",
