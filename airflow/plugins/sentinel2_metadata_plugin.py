@@ -160,7 +160,7 @@ class Sentinel2MetadataOperator(BaseOperator):
                     "eop:identifier": s2_product.manifest_safe_path.rsplit('.SAFE', 1)[0],
                     "timeStart": s2_product.product_start_time,
                     "timeEnd": s2_product.product_stop_time,
-                    "originalPackageLocation": os.path.join(self.ORIGINAL_PACKAGE_DOWNLOAD_BASE_URL , self.archived_products.pop(0).rsplit("/")[-1]), 
+                    "originalPackageLocation": os.path.join(self.ORIGINAL_PACKAGE_DOWNLOAD_BASE_URL , os.path.basename(self.archived_products.pop(0))), 
                     "thumbnailURL": None,
                     "quicklookURL": None,
                     "eop:parentIdentifier": "SENTINEL2",
