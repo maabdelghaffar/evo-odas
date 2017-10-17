@@ -138,7 +138,7 @@ class Sentinel2MetadataOperator(BaseOperator):
             log.info("Getting inputs from: dhus_download_task" )
             self.downloaded_products = context['task_instance'].xcom_pull('dhus_download_task', key='downloaded_products')
 
-        services= [{"wms":("GetCapabilities","GetMap")},{"wfs":("GetCapabilities","GetFeature")},{"wcs":("GetCapabilities","GetCoverage")}]
+        services= [{"wms":("GetCapabilities","GetMap","eoIdentifier")},{"wfs":("GetCapabilities","GetFeature","eoParentIdentifier")},{"wcs":("GetCapabilities","GetCoverage","eoParentIdentifier")}]
         for product in self.downloaded_products.keys():
             log.info("Processing: {}".format(product))
             with s2reader.open(product) as s2_product:
@@ -158,7 +158,7 @@ class Sentinel2MetadataOperator(BaseOperator):
                     "eop:identifier": s2_product.manifest_safe_path.rsplit('.SAFE', 1)[0],
                     "timeStart": s2_product.product_start_time,
                     "timeEnd": s2_product.product_stop_time,
-                    "originalPackageLocation": None, 
+                    "originalPackageLocation": os.path.join(self.ORIGINAL_PACKAGE_DOWNLOAD_BASE_URL , os.path.basename(self.archived_products.pop(0))), 
                     "thumbnailURL": None,
                     "quicklookURL": None,
                     "eop:parentIdentifier": "SENTINEL2",
@@ -223,12 +223,12 @@ class Sentinel2MetadataOperator(BaseOperator):
                                   "method": "GET",
                                   "code": "GetCapabilities",
                                   "type": "application/xml",
-                                  "href": "${BASE_URL}"+"/{}/{}/ows?service={}&request=GetCapabilities&CQL_FILTER=eoParentIdentifier='{}'".format(
+                                  "href": "${BASE_URL}"+"/{}/{}/ows?service={}&request=GetCapabilities&CQL_FILTER={}='{}'".format(
                                         self.GS_WORKSPACE,
                                         self.GS_LAYER,
                                         service_name.upper(),
+                                        service_calls[2],
                                         s2_product.manifest_safe_path.rsplit('.SAFE', 1)[0])})
-            
             #Here we generate the dictionaries of GetMap, GetFeature and GetCoverage operations from util dir
             links.append(generate_wfs_dict(s2_product, self.GS_WORKSPACE, self.GS_FEATURETYPE))
             links.append(generate_wcs_dict(granule_coordinates, self.GS_WORKSPACE, s2_product, self.coverage_id, self.GS_WCS_FORMAT, self.GS_WCS_SCALE_I, self.GS_WCS_SCALE_J))
