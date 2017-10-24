@@ -13,6 +13,8 @@ from airflow.operators import ZipInspector
 from airflow.operators import S1MetadataOperator
 from airflow.operators import GDALWarpOperator
 from airflow.operators import GDALAddoOperator
+from airflow.operators import DummyOperator
+from airflow.operators import BranchPythonOperator
 
 from airflow.utils.trigger_rule import TriggerRule
 
@@ -88,6 +90,20 @@ def prepare_band_paths(get_inputs_from, *args, **kwargs):
     file_path = files_path[band_number - 1]
     return [file_path]
 
+
+def get_next_task_id(get_inputs_from, *args, **kwargs):
+    """Check if product already exists so that the DAG run will terminate safely without passing by the rest of the tasks"""
+    task_instance = kwargs['ti']
+    products_available = task_instance.xcom_pull(task_ids=get_inputs_from, key=XCOM_RETURN_KEY)
+    print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx"
+    for product_id in  products_available.keys():
+        downloaded_product_name= products_available[product_id].get("title")+".zip"
+        if downloaded_product_name in os.listdir(S1GRD1SDV.download_dir):
+           #DAG will skip all downstream tasks until finish_task
+           return "skipping_branch_task"
+        else:
+           return "download_product_task"
+
 # DAG definition
 dag = DAG(S1GRD1SDV.id, 
           description='DAG for searching, filtering and downloading Sentinel 1 data from DHUS server',
@@ -108,6 +124,13 @@ search_task = DHUSSearchOperator(task_id='search_product_task',
                                  order_by=S1GRD1SDV.dhus_search_orderby,
                                  keywords=S1GRD1SDV.dhus_search_keywords,
                                  dag=dag)
+
+# Branch then Skip if searched and downloaded product before
+branch_task = BranchPythonOperator(task_id='check_product_task', python_callable= get_next_task_id, op_kwargs={
+             'get_inputs_from': search_task.task_id
+         }, dag=dag)
+
+skipping_branch_task = DummyOperator(task_id='skipping_branch_task', dag=dag)
 
 # DHUS Download Task Operator
 download_task = DHUSDownloadOperator(task_id='download_product_task',
@@ -210,13 +233,23 @@ publish_task = PythonOperator(task_id="publish_product_task",
                               },
                               dag = dag)
 
-download_task.set_upstream(search_task)
+# Finish task to announce reaching the end of the DAG
+finish_task = DummyOperator(task_id="finish_task", dag= dag)
+
+
+download_task.set_upstream(branch_task)
 archive_task.set_upstream(download_task)
 zip_task.set_upstream(download_task)
 metadata_task.set_upstream(download_task)
 metadata_task.set_upstream(archive_task)
 
+branch_task.set_upstream(search_task)
+skipping_branch_task.set_upstream(branch_task)
+finish_task.set_upstream(skipping_branch_task)
+
 for task in upload_tasks:
     metadata_task.set_upstream(task)
 
 publish_task.set_upstream(metadata_task)
+
+finish_task.set_upstream(publish_task)
