@@ -7,7 +7,7 @@ from airflow.utils.decorators import apply_defaults
 from airflow.models import XCOM_RETURN_KEY
 import config.xcom_keys as xk
 from geoserver.catalog import Catalog
-
+import json
 import sys
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -268,6 +268,26 @@ def publish_product(geoserver_username, geoserver_password, geoserver_rest_endpo
     else:
         log.warn("No product.zip found.")
         return list()
+
+def get_published_products(geoserver_username, geoserver_password, geoserver_rest_endpoint, *args, **kwargs):
+    # This function returns a list of published products ids 
+    log.info("get_published_products task")
+    log.info("""
+        geoserver_username: {}
+        geoserver_password: ******
+        geoserver_rest_endpoint: {}
+        """.format(
+            geoserver_username,
+            geoserver_rest_endpoint
+        )
+    )
+
+    a = requests.auth.HTTPBasicAuth(geoserver_username, geoserver_password)
+    r = requests.get(geoserver_rest_endpoint, auth=a)
+    published_products_dict = json.loads(r)
+    # Here we fill up the already published products id's
+    published_products_ids = [ item["id"]  for item in published_products_dict.values()[0]]
+    return published_products_ids
 
 class GDALPlugin(AirflowPlugin):
     name = "GeoServer_plugin"
