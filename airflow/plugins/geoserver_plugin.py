@@ -290,9 +290,9 @@ def get_published_products(geoserver_username, geoserver_password, geoserver_res
     published_products_ids = [ item["id"]  for item in published_products_dict.values()[0]]
     return published_products_ids
 
-def is_product_published(geoserver_username, geoserver_password, geoserver_rest_endpoint, product_id, *args, **kwargs):
+def is_product_published(geoserver_username, geoserver_password, geoserver_rest_endpoint, *args, **kwargs):
     # This function returns True if found the product is published, False if not found
-    log.info("get_published_products task")
+    log.info("is_product_published task")
     log.info("""
         geoserver_username: {}
         geoserver_password: ******
