@@ -689,13 +689,13 @@ class Landsat8SearchOperator(BaseOperator):
             cloud_condition = ''
 
         if self.area.path:
-            path_condition =  " path = %s "%(self.area.path)
+            path_condition =  " path in %s "%(str(self.area.path))
             self.conditions_list.append(path_condition)
         else:
             path_condition = ''
 
         if self.area.row:
-            row_condition =  " row = %s "%(self.area.row)
+            row_condition =  " row in %s "%(str(self.area.row))
             self.conditions_list.append(row_condition)
         else:
             row_condition = ''

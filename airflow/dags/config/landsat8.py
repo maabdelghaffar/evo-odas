@@ -51,12 +51,14 @@ order_type = ascending
 
 download_max = 1
 
+# For multi paths/rows, please add different paths e.g: path=(174,175) and the attached rows as row=(37,38) respectively.
+# For single path/row, please declare as following example: path=(175), row=(37)
 AREAS = [
-    Landsat8Area(name="daraa", path=174, row=37, bands=range(1, 12)),
+    Landsat8Area(name="daraa", path=(174,175), row=(37,38), bands=range(1, 12)),
     # These are just some dummy areas in order to test generation of
     # multiple DAGs
-    Landsat8Area(name="neighbour", path=175, row=37, bands=[1, 2, 3, 7]),
-    Landsat8Area(name="other", path=176, row=37, bands=range(1, 12)),
+    Landsat8Area(name="neighbour", path=(175), row=(37), bands=[1, 2, 3, 7]),
+    Landsat8Area(name="other", path=(176), row=(37), bands=range(1, 12)),
 ]
 
 cloud_coverage = 90.9
